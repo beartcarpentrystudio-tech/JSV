@@ -1,0 +1,282 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: /vehicles
+// Fields:
+//   - id: string (required)
+//   - model: string (required)
+//   - yearRange: string (required)
+//   - image: string (optional)
+//   - marketValueFactor: number (optional)
+//
+// Collection: /parts
+// Fields:
+//   - id: string (required)
+//   - name: string (required)
+//   - basePrice: number (required)
+//   - category: string (optional)
+//
+// Collection: /inventory/{vehicleId}/states/{partId}
+// Fields:
+//   - status: string (required, enum: available, sold, pending)
+//   - price: number (required)
+//   - lastChecked: string (optional, format: date-time)
+//   - updatedBy: string (optional)
+//
+// Collection: /conversations
+// Fields:
+//   - clientName: string (required)
+//   - platform: string (required, enum: whatsapp, messenger)
+//   - lastMessage: string (optional)
+//   - timestamp: string (optional)
+//   - unread: int (optional)
+//   - avatarColor: string (optional)
+//
+// Collection: /users/{userId}
+// Fields:
+//   - uid: string (required)
+//   - email: string (required)
+//   - displayName: string (optional)
+//   - role: string (required, enum: admin, staff)
+//   - themeId: string (optional)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "beartcarpentrystudio@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isManager() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'manager'];
+    }
+
+    function getUserOrg() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.organizationId;
+    }
+
+    function sameOrg(docOrgId) {
+      return isAuthenticated() && getUserOrg() == docOrgId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'role', 'organizationId', 'themeId']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'manager', 'operator', 'auditor'] &&
+             data.organizationId is string &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('themeId' in data) || (data.themeId is string && data.themeId.size() < 50));
+    }
+
+    function isValidVehicle(data) {
+      return hasOnlyAllowedFields(['id', 'model', 'yearRange', 'image', 'marketValueFactor']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.model is string && data.model.size() > 0 && data.model.size() < 100 &&
+             data.yearRange is string && data.yearRange.size() > 0 && data.yearRange.size() < 20 &&
+             (!('image' in data) || (data.image is string && data.image.size() < 500)) &&
+             (!('marketValueFactor' in data) || data.marketValueFactor is number);
+    }
+
+    function isValidPart(data) {
+      return hasOnlyAllowedFields(['id', 'name', 'basePrice', 'category']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.basePrice is number && data.basePrice >= 0 &&
+             (!('category' in data) || (data.category is string && data.category.size() < 50));
+    }
+
+    function isValidInventoryState(data) {
+      return hasOnlyAllowedFields(['status', 'price', 'lastChecked', 'updatedBy']) &&
+             data.status in ['available', 'sold', 'pending'] &&
+             data.price is number && data.price >= 0 &&
+             (!('lastChecked' in data) || data.lastChecked is string) &&
+             (!('updatedBy' in data) || data.updatedBy is string);
+    }
+
+    function isValidConversation(data) {
+      return hasOnlyAllowedFields(['clientName', 'platform', 'lastMessage', 'timestamp', 'unread', 'avatarColor']) &&
+             data.clientName is string && data.clientName.size() > 0 && data.clientName.size() < 100 &&
+             data.platform in ['whatsapp', 'messenger'] &&
+             (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() < 2000)) &&
+             (!('unread' in data) || data.unread is int) &&
+             (!('avatarColor' in data) || (data.avatarColor is string && data.avatarColor.size() < 50));
+    }
+
+    function isValidSession(data) {
+      return hasOnlyAllowedFields(['topicName', 'transcript', 'keyPoints', 'workflows', 'conclusions', 'errorsAndImprovements', 'timestamp', 'addedBy']) &&
+             data.topicName is string && data.topicName.size() > 0 && data.topicName.size() < 200 &&
+             data.transcript is string &&
+             data.keyPoints is list &&
+             data.workflows is list &&
+             data.conclusions is string &&
+             data.errorsAndImprovements is string &&
+             (!('timestamp' in data) || data.timestamp is timestamp) &&
+             data.addedBy is string;
+    }
+
+    function isValidWorkflow(data) {
+      return hasOnlyAllowedFields(['title', 'description', 'actions', 'functionCalls', 'categories', 'windowsUsed', 'websitesUsed', 'useCount', 'errorCount', 'efficiency', 'status', 'lastModifiedBy', 'version', 'timestamp']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string &&
+             data.actions is list &&
+             data.functionCalls is list &&
+             data.categories is list &&
+             data.windowsUsed is list &&
+             data.websitesUsed is list &&
+             data.useCount is number && data.useCount >= 0 &&
+             data.errorCount is number && data.errorCount >= 0 &&
+             data.efficiency is number && data.efficiency >= 0 && data.efficiency <= 100 &&
+             data.status in ['green', 'yellow', 'red'] &&
+             data.lastModifiedBy is string &&
+             data.version is number && data.version >= 1 &&
+             (!('timestamp' in data) || data.timestamp is timestamp);
+    }
+
+    function isValidTelemetryLog(data) {
+      return hasOnlyAllowedFields(['userId', 'action', 'target', 'metadata', 'timestamp']) &&
+             data.userId is string && data.userId.size() > 0 &&
+             data.action is string && data.action.size() > 0 && data.action.size() < 100 &&
+             data.target is string && data.target.size() > 0 && data.target.size() < 200 &&
+             (!('metadata' in data) || data.metadata is string) &&
+             (!('timestamp' in data) || data.timestamp is timestamp);
+    }
+
+    function isValidPersonalization(data) {
+      return hasOnlyAllowedFields(['instructions', 'updatedAt', 'backup']) &&
+             data.instructions is string && data.instructions.size() < 10000 &&
+             data.updatedAt is string &&
+             (!('backup' in data) || (data.backup is string && data.backup.size() < 10000));
+    }
+
+    function isValidAgentProfile(data) {
+      return hasOnlyAllowedFields(['id', 'name', 'role', 'specialty', 'systemInstruction', 'model', 'avatar', 'color', 'status']) &&
+             data.id is string && data.name is string && data.role is string &&
+             data.systemInstruction is string &&
+             (!('status' in data) || data.status in ['active', 'idle', 'busy']);
+    }
+
+    function isValidAgentTask(data) {
+      return hasOnlyAllowedFields(['id', 'title', 'description', 'assignedAgentIds', 'status', 'progress', 'checkpoints', 'logs', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.title is string &&
+             data.status in ['pending', 'in_progress', 'waiting_user', 'completed', 'failed'] &&
+             data.progress is number && data.progress >= 0 && data.progress <= 100;
+    }
+
+    function isValidAgentInteraction(data) {
+      return hasOnlyAllowedFields(['id', 'taskId', 'senderId', 'senderType', 'content', 'timestamp', 'metadata']) &&
+             data.id is string && data.senderId is string &&
+             data.senderType in ['agent', 'user', 'system'] &&
+             data.content is string && data.timestamp is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(userId) && request.resource.data.role == 'staff') || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
+    }
+
+    match /user_personalization/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidPersonalization(request.resource.data);
+    }
+
+    match /ai_agent_profiles/{agentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidAgentProfile(request.resource.data);
+    }
+
+    match /agent_tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidAgentTask(request.resource.data);
+    }
+
+    match /agent_interactions/{interactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidAgentInteraction(request.resource.data);
+    }
+
+    match /ai_sessions/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidSession(request.resource.data);
+    }
+
+    match /ai_workflows/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidWorkflow(request.resource.data);
+    }
+
+    match /telemetry_logs/{docId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && isValidTelemetryLog(request.resource.data);
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /parts/{partId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /inventory/{vehicleId}/states/{partId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidInventoryState(request.resource.data);
+    }
+
+    // Allow collectionGroup queries for 'states'
+    match /{path=**}/states/{partId} {
+      allow read: if isAuthenticated();
+    }
+
+    match /conversations/{convId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidConversation(request.resource.data);
+      allow update: if isAuthenticated() && isValidConversation(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

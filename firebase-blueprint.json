@@ -1,0 +1,210 @@
+{
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Un vehículo en el inventario de reciclaje.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "model": { "type": "string" },
+        "yearRange": { "type": "string" },
+        "image": { "type": "string" },
+        "marketValueFactor": { "type": "number" }
+      },
+      "required": ["id", "model", "yearRange"]
+    },
+    "Part": {
+      "title": "Part",
+      "description": "Una pieza base catalogada.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "basePrice": { "type": "number" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "name", "basePrice"]
+    },
+    "InventoryState": {
+      "title": "InventoryState",
+      "description": "El estado de una pieza específica en un vehículo.",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["available", "sold", "damaged"] },
+        "price": { "type": "number" },
+        "lastChecked": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["status", "price"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Una conversación de CRM con un cliente.",
+      "type": "object",
+      "properties": {
+        "clientName": { "type": "string" },
+        "platform": { "type": "string", "enum": ["whatsapp", "messenger"] },
+        "lastMessage": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "unread": { "type": "integer" },
+        "avatarColor": { "type": "string" }
+      },
+      "required": ["clientName", "platform"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Perfil de usuario del sistema.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "themeId": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "AIWorkflow": {
+      "title": "AIWorkflow",
+      "description": "Configuración y estadísticas de un workflow de la IA.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "actions": { "type": "array", "items": { "type": "string" } },
+        "functionCalls": { "type": "array", "items": { "type": "string" } },
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "windowsUsed": { "type": "array", "items": { "type": "string" } },
+        "websitesUsed": { "type": "array", "items": { "type": "string" } },
+        "useCount": { "type": "number" },
+        "errorCount": { "type": "number" },
+        "efficiency": { "type": "number" },
+        "status": { "type": "string", "enum": ["green", "yellow", "red"] },
+        "lastModifiedBy": { "type": "string" },
+        "version": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "useCount", "errorCount", "efficiency", "status"]
+    },
+    "TelemetryLog": {
+      "title": "TelemetryLog",
+      "description": "Registro de telemetría y auditoría de uso de la app.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "metadata": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "action", "target"]
+    },
+    "AIPersonalization": {
+      "title": "AIPersonalization",
+      "description": "Instrucciones personalizadas y backups de la IA para el usuario.",
+      "type": "object",
+      "properties": {
+        "instructions": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "backup": { "type": "string" }
+      },
+      "required": ["instructions", "updatedAt"]
+    },
+    "AIAgentProfile": {
+      "title": "AIAgentProfile",
+      "description": "Perfil de un agente de IA especializado.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "specialty": { "type": "string" },
+        "systemInstruction": { "type": "string" },
+        "model": { "type": "string" },
+        "avatar": { "type": "string" },
+        "color": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "idle", "busy"] }
+      },
+      "required": ["id", "name", "role", "systemInstruction"]
+    },
+    "AgentTask": {
+      "title": "AgentTask",
+      "description": "Una tarea asignada a uno o varios agentes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedAgentIds": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["pending", "in_progress", "waiting_user", "completed", "failed"] },
+        "progress": { "type": "number" },
+        "checkpoints": { "type": "array", "items": { "type": "object" } },
+        "logs": { "type": "array", "items": { "type": "object" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "status", "progress"]
+    },
+    "AgentInteraction": {
+      "title": "AgentInteraction",
+      "description": "Registro de interacción entre agentes o agente-usuario.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "taskId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderType": { "type": "string", "enum": ["agent", "user", "system"] },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "senderId", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/vehicles": {
+      "schema": "Vehicle",
+      "description": "Colección global de vehículos disponibles."
+    },
+    "/parts": {
+      "schema": "Part",
+      "description": "Catálogo maestro de piezas."
+    },
+    "/inventory/{vehicleId}/states/{partId}": {
+      "schema": "InventoryState",
+      "description": "Estados de piezas por vehículo."
+    },
+    "/conversations": {
+      "schema": "Conversation",
+      "description": "Conversaciones de clientes."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Perfiles y configuraciones de usuario."
+    },
+    "/ai_workflows/{workflowId}": {
+      "schema": "AIWorkflow",
+      "description": "Workflows de la IA."
+    },
+    "/telemetry_logs/{logId}": {
+      "schema": "TelemetryLog",
+      "description": "Logs de telemetría."
+    },
+    "/user_personalization/{userId}": {
+      "schema": "AIPersonalization",
+      "description": "Configuraciones de personalización de IA por usuario."
+    },
+    "/ai_agent_profiles/{agentId}": {
+      "schema": "AIAgentProfile",
+      "description": "Perfiles de agentes de IA."
+    },
+    "/agent_tasks/{taskId}": {
+      "schema": "AgentTask",
+      "description": "Tareas y procesos de agentes."
+    },
+    "/agent_interactions/{interactionId}": {
+      "schema": "AgentInteraction",
+      "description": "Logs de interacciones de agentes."
+    }
+  }
+}
