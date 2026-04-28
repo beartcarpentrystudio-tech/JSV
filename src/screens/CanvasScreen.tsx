@@ -135,9 +135,9 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
   };
 
   return (
-    <div className="p-6 pb-24 space-y-8 min-h-screen bg-[#0a0a0a]">
+    <div className="p-2 pb-24 space-y-4 min-h-screen bg-[#0a0a0a]">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
             <div className="p-2 bg-jsv-orange/20 rounded-xl">
@@ -165,24 +165,24 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
       </div>
 
       {mode === 'single' ? (
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
           {/* Left Sidebar: Inputs */}
-          <div className="xl:col-span-1 space-y-6">
-            <div className="glass-panel rounded-3xl p-6 space-y-6 border border-white/5">
+          <div className="xl:col-span-1 space-y-4">
+            <div className="glass-panel rounded-3xl p-4 space-y-4 border border-white/5">
               <div className="flex items-center gap-2 mb-2">
                 <Box size={16} className="text-jsv-orange" />
                 <h3 className="text-[10px] font-bold text-white tracking-widest uppercase">Datos de la Pieza</h3>
               </div>
               
-              <div className="space-y-4">
-                <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 tracking-widest uppercase">Nombre de Pieza</label>
                   <input 
                     type="text" 
                     value={customPart.name}
                     onChange={(e) => setCustomPart(prev => ({ ...prev, name: e.target.value }))}
                     list="part-list"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white text-sm focus:border-jsv-orange outline-none transition-all"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-jsv-orange outline-none transition-all"
                     placeholder="Ej. Parrilla Superior"
                   />
                   <datalist id="part-list">
@@ -190,7 +190,7 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
                   </datalist>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 tracking-widest uppercase">Precio de Oferta</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-jsv-orange font-bold">$</span>
@@ -198,19 +198,19 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
                       type="number" 
                       value={customState.price}
                       onChange={(e) => setCustomState(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl p-4 pl-8 text-jsv-orange text-lg font-bold outline-none focus:border-jsv-orange transition-all"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 pl-8 text-jsv-orange text-lg font-bold outline-none focus:border-jsv-orange transition-all"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 tracking-widest uppercase">Modelo de Vehículo</label>
                   <input 
                     type="text" 
                     value={customVehicle.model}
                     onChange={(e) => setCustomVehicle(prev => ({ ...prev, model: e.target.value }))}
                     list="vehicle-list"
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white text-sm focus:border-jsv-orange outline-none transition-all"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-jsv-orange outline-none transition-all"
                     placeholder="Ej. Chevrolet Aveo"
                   />
                   <datalist id="vehicle-list">
@@ -218,20 +218,20 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
                   </datalist>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 tracking-widest uppercase">Años Compatibles</label>
                   <input 
                     type="text" 
                     value={customVehicle.yearRange}
                     onChange={(e) => setCustomVehicle(prev => ({ ...prev, yearRange: e.target.value }))}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white text-sm focus:border-jsv-orange outline-none transition-all"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-jsv-orange outline-none transition-all"
                     placeholder="Ej. 2012-2017"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="glass-panel rounded-3xl p-6 space-y-4 border border-white/5">
+            <div className="glass-panel rounded-3xl p-4 space-y-3 border border-white/5">
               <div className="flex items-center gap-2 mb-2">
                 <ImageIcon size={16} className="text-jsv-orange" />
                 <h3 className="text-[10px] font-bold text-white tracking-widest uppercase">Recursos</h3>
@@ -239,9 +239,9 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
               
               <button 
                 onClick={handleMirrorSearch}
-                className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 py-4 rounded-2xl text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-3 hover:bg-blue-500/20 transition-all"
+                className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 py-3 rounded-2xl text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-all"
               >
-                <Search size={18} /> Buscar en Google
+                <Search size={16} /> Buscar en Google
               </button>
 
               <div 
@@ -255,10 +255,10 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
                   className="absolute inset-0 opacity-0 cursor-pointer z-10"
                   accept="image/*"
                 />
-                <div className="w-full bg-white/5 border border-dashed border-white/20 text-gray-400 py-8 rounded-2xl text-[10px] font-bold tracking-widest uppercase flex flex-col items-center justify-center gap-3 group-hover:bg-white/10 group-hover:border-jsv-orange transition-all">
-                  <Upload size={24} />
+                <div className="w-full bg-white/5 border border-dashed border-white/20 text-gray-400 py-6 rounded-2xl text-[10px] font-bold tracking-widest uppercase flex flex-col items-center justify-center gap-2 group-hover:bg-white/10 group-hover:border-jsv-orange transition-all">
+                  <Upload size={20} />
                   <div className="text-center">
-                    <p>Arrastra o selecciona imagen</p>
+                    <p>Sube imagen</p>
                     <p className="text-[8px] text-gray-500 mt-1">O PEGA CON CTRL+V</p>
                   </div>
                 </div>
@@ -268,14 +268,14 @@ export function CanvasScreen({ initialData, onClearInitialData }: CanvasScreenPr
             <button 
               onClick={handleDownload}
               disabled={!generatedImage}
-              className="w-full bg-jsv-orange text-black py-5 rounded-3xl text-xs font-black tracking-[0.2em] uppercase flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_20px_40px_rgba(245,208,97,0.2)] disabled:opacity-50 disabled:grayscale"
+              className="w-full bg-jsv-orange text-black py-4 rounded-3xl text-xs font-black tracking-[0.2em] uppercase flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_20px_40px_rgba(245,208,97,0.2)] disabled:opacity-50 disabled:grayscale"
             >
               <Download size={20} strokeWidth={2.5} /> Exportar Final
             </button>
           </div>
 
           {/* Main Content: Canvas */}
-          <div className="xl:col-span-3 h-[800px]">
+          <div className="xl:col-span-4">
             <AssetGenerator 
               vehicle={customVehicle}
               part={customPart}

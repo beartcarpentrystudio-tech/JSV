@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { removeBackground } from "@imgly/background-removal";
-import { getArtDirection } from '../services/imageAiService';
+import { getArtDirection, generateBackground } from '../services/imageAiService';
 
 interface AssetGeneratorProps {
   vehicle: Vehicle;
@@ -28,6 +28,8 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
   const [activeTab, setActiveTab] = useState<'edit' | 'layers' | 'templates' | 'ai'>('edit');
   const [selectedObject, setSelectedObject] = useState<fabric.Object | null>(null);
   const [hasAutoMagicked, setHasAutoMagicked] = useState(false);
+  const [bgPrompt, setBgPrompt] = useState('');
+  const [isGeneratingBg, setIsGeneratingBg] = useState(false);
 
   // Shadow State
   const [shadowConfig, setShadowConfig] = useState({
@@ -60,17 +62,17 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
 
       // Responsive scaling for preview
       const updateSize = () => {
-        const wrapper = canvasRef.current?.parentElement?.parentElement; // The flex-1 container
-        if (!wrapper || !canvas) return;
+        const container = canvasRef.current?.closest('.flex-1');
+        if (!container || !canvas) return;
         
-        const padding = 64;
-        const availableWidth = wrapper.clientWidth - padding;
-        const availableHeight = wrapper.clientHeight - padding;
+        const availableWidth = container.clientWidth - 8; // Subtract small padding
+        const availableHeight = container.clientHeight - 8;
         
         // Ensure we have valid dimensions
         if (availableWidth <= 0 || availableHeight <= 0) return;
 
-        const size = Math.min(availableWidth, availableHeight, 1080);
+        // Use the maximum possible square size that fits
+        const size = Math.min(availableWidth, availableHeight);
         const scale = size / 1080;
         
         canvas.setZoom(scale);
@@ -86,7 +88,7 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
         });
       });
 
-      const container = canvasRef.current.parentElement?.parentElement;
+      const container = canvasRef.current?.closest('.flex-1');
       if (container) {
         resizeObserver.observe(container);
       }
@@ -349,6 +351,40 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
     }
   };
 
+  const handleGenerateBackground = async (prompt: string) => {
+    const canvas = fabricCanvas.current;
+    if (!canvas || !prompt) return;
+
+    setIsGeneratingBg(true);
+    toast.info('IA: Generando fondo publicitario...');
+    
+    const bgUrl = await generateBackground(prompt);
+    if (bgUrl) {
+      // Remove old background
+      const oldBg = canvas.getObjects().find(obj => (obj as any).isBackground);
+      if (oldBg) canvas.remove(oldBg);
+
+      fabric.Image.fromURL(bgUrl, { crossOrigin: 'anonymous' }).then(img => {
+        img.scaleToWidth(1080);
+        img.set({
+          left: 0,
+          top: 0,
+          selectable: false,
+          evented: false
+        });
+        (img as any).isBackground = true;
+        canvas.add(img);
+        canvas.sendObjectToBack(img);
+        canvas.renderAll();
+        generateOutput();
+        toast.success('IA: Fondo generado y aplicado');
+      });
+    } else {
+      toast.error('Error al generar fondo');
+    }
+    setIsGeneratingBg(false);
+  };
+
   const handleMagicAi = async () => {
     const canvas = fabricCanvas.current;
     if (!canvas) return;
@@ -390,6 +426,12 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
 
       if (suggestion.composition_notes) {
         toast.info(suggestion.composition_notes);
+      }
+
+      // If background prompt is suggested, generate it
+      if (suggestion.background_prompt) {
+        setBgPrompt(suggestion.background_prompt);
+        handleGenerateBackground(suggestion.background_prompt);
       }
     }
     setIsAiLoading(false);
@@ -577,9 +619,9 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
+    <div className="flex flex-col lg:flex-row gap-6 w-full min-h-[600px] lg:h-[calc(100vh-100px)]">
       {/* Canvas Area */}
-      <div className="flex-1 glass-panel rounded-3xl overflow-hidden relative flex items-center justify-center bg-black/20 p-4">
+      <div className="flex-1 glass-panel rounded-3xl overflow-hidden relative flex items-center justify-center bg-black/20 p-1">
         <div className="relative shadow-2xl border border-white/10 rounded-lg overflow-hidden bg-white">
           <canvas ref={canvasRef} />
         </div>
@@ -606,11 +648,12 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
       </div>
 
       {/* Sidebar Tools */}
-      <div className="w-full lg:w-96 glass-panel rounded-3xl flex flex-col overflow-hidden border border-white/5">
+      <div className="w-full lg:w-72 glass-panel rounded-3xl flex flex-col overflow-hidden border border-white/5">
         <div className="flex border-b border-white/10 bg-black/40">
           <button onClick={() => setActiveTab('edit')} className={`flex-1 py-4 text-[10px] font-bold tracking-widest uppercase transition-all ${activeTab === 'edit' ? 'text-jsv-orange border-b-2 border-jsv-orange bg-white/5' : 'text-gray-500 hover:text-white'}`}>Editar</button>
           <button onClick={() => setActiveTab('templates')} className={`flex-1 py-4 text-[10px] font-bold tracking-widest uppercase transition-all ${activeTab === 'templates' ? 'text-jsv-orange border-b-2 border-jsv-orange bg-white/5' : 'text-gray-500 hover:text-white'}`}>Plantillas</button>
           <button onClick={() => setActiveTab('layers')} className={`flex-1 py-4 text-[10px] font-bold tracking-widest uppercase transition-all ${activeTab === 'layers' ? 'text-jsv-orange border-b-2 border-jsv-orange bg-white/5' : 'text-gray-500 hover:text-white'}`}>Capas</button>
+          <button onClick={() => setActiveTab('ai')} className={`flex-1 py-4 text-[10px] font-bold tracking-widest uppercase transition-all ${activeTab === 'ai' ? 'text-jsv-orange border-b-2 border-jsv-orange bg-white/5' : 'text-gray-500 hover:text-white'}`}>IA</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
@@ -673,11 +716,17 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
                 <div className="flex gap-2">
                   <input 
                     type="text"
+                    value={bgPrompt}
+                    onChange={(e) => setBgPrompt(e.target.value)}
                     placeholder="Ej. Estudio minimalista, luz cálida..."
                     className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-jsv-orange outline-none"
                   />
-                  <button className="bg-jsv-orange text-black p-3 rounded-xl hover:scale-105 transition-all">
-                    <Sparkles size={18} />
+                  <button 
+                    onClick={() => handleGenerateBackground(bgPrompt)}
+                    disabled={isGeneratingBg || !bgPrompt}
+                    className="bg-jsv-orange text-black p-3 rounded-xl hover:scale-105 transition-all disabled:opacity-50"
+                  >
+                    {isGeneratingBg ? <RefreshCw className="animate-spin" size={18} /> : <Sparkles size={18} />}
                   </button>
                 </div>
                 <p className="text-[9px] text-gray-500 italic">Describe el entorno donde quieres colocar tu producto.</p>
@@ -687,9 +736,10 @@ export function AssetGenerator({ vehicle, part, state, onImageGenerated, trigger
                 <label className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Mejoras Automáticas</label>
                 <button 
                   onClick={handleMagicAi}
-                  className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white hover:bg-white/10 transition-all flex items-center gap-3"
+                  disabled={isAiLoading}
+                  className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white hover:bg-white/10 transition-all flex items-center gap-3 disabled:opacity-50"
                 >
-                  <Wand2 size={18} className="text-jsv-orange" />
+                  {isAiLoading ? <RefreshCw className="animate-spin" size={18} /> : <Wand2 size={18} className="text-jsv-orange" />}
                   <div className="text-left">
                     <p className="text-[10px] font-bold uppercase">Auto-Composición</p>
                     <p className="text-[8px] text-gray-500">Ajusta escala, luz y sombras con Gemini</p>

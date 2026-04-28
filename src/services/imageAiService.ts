@@ -36,3 +36,35 @@ export async function getArtDirection(base64Image: string, partName: string, veh
     return null;
   }
 }
+
+export async function generateBackground(prompt: string) {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-image",
+      contents: [
+        {
+          parts: [
+            { text: `Generate a professional advertising background for an auto part. 
+            Style: Professional studio photography, high-end commercial look.
+            Prompt: ${prompt}` }
+          ]
+        }
+      ],
+      config: {
+        imageConfig: {
+          aspectRatio: "1:1"
+        }
+      }
+    });
+
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Error generating background:", error);
+    return null;
+  }
+}
